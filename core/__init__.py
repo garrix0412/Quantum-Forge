@@ -1,0 +1,1 @@
+# QuantumForge V4 Intelligent - Core Module
