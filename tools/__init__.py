@@ -1,1 +1,0 @@
-# QuantumForge V4 Intelligent - Tools Module
