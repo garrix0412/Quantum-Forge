@@ -1,0 +1,211 @@
+"""
+QML Dataset Builder - QuantumForge V5
+
+QML数据集参数标准化器，接收来自parameter_matcher的参数，进行QML数据集特定的验证、标准化和默认值处理。
+遵循QuantumForge V5的LLM驱动架构：信任上游parameter_matcher分析，专注数据集处理逻辑。
+"""
+
+from typing import Dict, Any
+
+# 导入基类
+try:
+    from ..base_component import BaseComponent
+except ImportError:
+    import sys
+    import os
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    from components.base_component import BaseComponent
+
+
+class QMLDatasetBuilder(BaseComponent):
+    """QML数据集构建器 - 信任parameter_matcher的智能参数分析，专注数据集构建"""
+    
+    description = "Build and preprocess datasets for binary classification QML tasks. Supports MNIST and FashionMNIST with intelligent dataset selection. Handles binary class filtering, train/test splitting, and data preprocessing for quantum machine learning. Always enforces exactly 2 classes for binary classification. Trusts parameter_matcher for dataset selection."
+    
+    def execute(self, query: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        """构建QML数据集"""
+        # 信任parameter_matcher提供的参数
+        dataset_params = params.copy()
+        
+        # 应用QML数据集特定的默认值
+        complete_params = self._apply_qml_dataset_defaults(dataset_params)
+        
+        # 参数获取
+        dataset_name = complete_params.get("dataset", "MNIST")
+        target_classes = complete_params.get("target_classes", [2, 4])
+        train_samples_per_class = complete_params.get("train_samples_per_class", 100)
+        test_samples_per_class = complete_params.get("test_samples_per_class", 50)
+        
+        # 生成对应数据集的处理代码
+        code = self._generate_dataset_code(complete_params)
+        
+        # 计算dataset_info
+        dataset_info = self._calculate_dataset_info(dataset_name, target_classes, 
+                                                  train_samples_per_class, test_samples_per_class)
+        
+        # 简要描述
+        classes_str = str(target_classes) if len(target_classes) <= 2 else f"{len(target_classes)} classes"
+        notes = f"{dataset_name} dataset: {classes_str}, {train_samples_per_class + test_samples_per_class} samples per class"
+        
+        return {
+            "code": code,
+            "notes": notes,
+            "dataset_info": dataset_info
+        }
+    
+    def _apply_qml_dataset_defaults(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """应用QML数据集特定的默认值 - 信任parameter_matcher"""
+        # 设置QML数据集默认值
+        defaults = {
+            "dataset": "MNIST",  # 默认MNIST数据集（最适合QML入门）
+            "target_classes": [2, 4],  # 默认识别数字2和4（经典二分类任务）
+            "train_samples_per_class": 100,  # 每类训练样本数（适合量子计算资源）
+            "test_samples_per_class": 50,   # 每类测试样本数
+            "batch_size": 1,  # 批次大小（量子电路通常单样本处理）
+            "random_seed": 42,  # 随机种子保证复现性
+            "data_preprocessing": "normalize",  # 数据预处理方式
+            "task_type": "binary_classification"  # 默认二分类任务
+        }
+        
+        # 合并参数，保持parameter_matcher提供的参数优先
+        complete_params = {**defaults, **params}
+        
+        # QML专注二分类任务
+        target_classes = complete_params.get("target_classes", [2, 4])
+        if len(target_classes) != 2:
+            # 强制二分类，如果超过2个类别则只取前2个
+            complete_params["target_classes"] = target_classes[:2]
+        complete_params["task_type"] = "binary_classification"
+        
+        # 根据数据集类型调整样本数量和默认类别
+        dataset = complete_params.get("dataset", "MNIST")
+        
+        # 为FashionMNIST设置合适的默认类别
+        if dataset == "FashionMNIST" and "target_classes" not in params:
+            complete_params["target_classes"] = [0, 1]  # T-shirt/top, Trouser
+        
+        return complete_params
+    
+    def _generate_dataset_code(self, params: Dict[str, Any]) -> str:
+        """生成数据集处理代码"""
+        dataset_name = params.get("dataset", "MNIST")
+        target_classes = params["target_classes"]
+        train_samples = params["train_samples_per_class"]
+        test_samples = params["test_samples_per_class"]
+        batch_size = params["batch_size"]
+        random_seed = params["random_seed"]
+        preprocessing = params.get("data_preprocessing", "normalize")
+        
+        # 生成目标类别的字符串表示
+        classes_str = ", ".join(map(str, target_classes))
+        
+        # 根据数据集选择预处理参数
+        if dataset_name == "MNIST":
+            if preprocessing == "normalize":
+                transform_code = "transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])"
+            else:
+                transform_code = "transforms.ToTensor()"
+        elif dataset_name == "FashionMNIST":
+            if preprocessing == "normalize":
+                transform_code = "transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.2860,), (0.3530,))])"
+            else:
+                transform_code = "transforms.ToTensor()"
+        else:
+            # 默认使用MNIST参数
+            transform_code = "transforms.ToTensor()"
+        
+        # 生成完整的数据集处理代码
+        code = f'''# QML {dataset_name} Dataset Builder - Generated by QuantumForge V5
+import numpy as np
+import torch
+from torch.utils.data import DataLoader
+from torchvision import datasets, transforms
+from torch import manual_seed
+
+# Dataset Configuration
+DATASET = "{dataset_name}"
+TARGET_CLASSES = {target_classes}  # Classes to classify: {classes_str}
+TRAIN_SAMPLES_PER_CLASS = {train_samples}
+TEST_SAMPLES_PER_CLASS = {test_samples}
+BATCH_SIZE = {batch_size}
+RANDOM_SEED = {random_seed}
+
+print(f"Configuring {{DATASET}} dataset for classes {{TARGET_CLASSES}}")
+print(f"Training samples per class: {{TRAIN_SAMPLES_PER_CLASS}}")
+print(f"Test samples per class: {{TEST_SAMPLES_PER_CLASS}}")
+
+# Set reproducibility seed
+manual_seed(RANDOM_SEED)
+
+# Data preprocessing transform
+transform = {transform_code}
+
+# Load {dataset_name} training dataset
+train_data = datasets.{dataset_name}(
+    root="./data", train=True, download=True, transform=transform
+)
+
+# Filter training data for target classes
+train_indices = []
+for class_label in TARGET_CLASSES:
+    class_indices = np.where(train_data.targets == class_label)[0][:TRAIN_SAMPLES_PER_CLASS]
+    train_indices.extend(class_indices)
+
+train_data.data = train_data.data[train_indices]
+train_data.targets = train_data.targets[train_indices]
+
+# Remap labels: first class -> 0, second class -> 1, etc.
+for i, class_label in enumerate(TARGET_CLASSES):
+    train_data.targets[train_data.targets == class_label] = i
+
+# Load {dataset_name} test dataset
+test_data = datasets.{dataset_name}(
+    root="./data", train=False, download=True, transform=transform
+)
+
+# Filter test data for target classes
+test_indices = []
+for class_label in TARGET_CLASSES:
+    class_indices = np.where(test_data.targets == class_label)[0][:TEST_SAMPLES_PER_CLASS]
+    test_indices.extend(class_indices)
+
+test_data.data = test_data.data[test_indices]
+test_data.targets = test_data.targets[test_indices]
+
+# Remap labels for test data
+for i, class_label in enumerate(TARGET_CLASSES):
+    test_data.targets[test_data.targets == class_label] = i
+
+# Create data loaders
+train_loader = DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True)
+test_loader = DataLoader(test_data, batch_size=BATCH_SIZE, shuffle=True)
+
+print(f"Dataset ready: {{len(train_data)}} training samples, {{len(test_data)}} test samples")
+print(f"{dataset_name} data loaders created successfully")
+'''
+        
+        return code
+    
+    def _calculate_dataset_info(self, dataset_name: str, target_classes: list, 
+                               train_samples: int, test_samples: int) -> Dict[str, Any]:
+        """计算数据集关键信息"""
+        
+        # 数据集维度信息（MNIST和FashionMNIST都是28x28单通道）
+        dims = {"channels": 1, "height": 28, "width": 28}
+        
+        # 计算总样本数
+        total_train_samples = len(target_classes) * train_samples
+        total_test_samples = len(target_classes) * test_samples
+        
+        return {
+            "dataset_name": dataset_name,
+            "num_classes": len(target_classes),
+            "target_classes": target_classes,
+            "image_dims": dims,
+            "total_train_samples": total_train_samples,
+            "total_test_samples": total_test_samples,
+            "samples_per_class": {
+                "train": train_samples,
+                "test": test_samples
+            }
+        }
