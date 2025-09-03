@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Backend.Estimator",
+    "kind": "backend",
+    "tags": ["estimator", "primitive", "qiskit"],
+    "needs": [],
+    "provides": ["estimator"],
+    "params_schema": {},
+    "yields": {
+      "estimator": "Estimator primitive"
+    },
+    "codegen_hint": {
+      "helper": "create_estimator",
+      "import": "from qiskit.primitives import Estimator"
+    }
+  }
+]

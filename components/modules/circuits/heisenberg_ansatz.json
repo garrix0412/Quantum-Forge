@@ -1,0 +1,33 @@
+{
+    "name": "Circuit.Heisenberg_Ansatz", 
+    "kind": "ansatz",
+    "description": "海森堡模型专用变分ansatz",
+    "tags": ["heisenberg", "ansatz", "variational", "hardware_efficient"],
+    "needs": [],
+    "provides": ["ansatz"],
+    "yields": {
+        "ansatz": "QuantumCircuit ansatz"
+    },
+    "params_schema": {
+        "n": {
+            "type": "int",
+            "description": "量子比特数",
+            "default": 4,
+            "range": [2, 20]
+        },
+        "reps": {
+            "type": "int", 
+            "description": "ansatz重复层数",
+            "default": 1,
+            "range": [1, 10]
+        }
+    },
+    "helper_function": "heisenberg_ansatz", 
+    "invoke_template": "{var} = heisenberg_ansatz(n, reps)",
+    "codegen_hint": {
+        "cell_name": "circuit_heisenberg",
+        "helper": "heisenberg_ansatz", 
+        "import": "from qiskit import QuantumCircuit; from qiskit.circuit import ParameterVector",
+        "function_call": "heisenberg_ansatz"
+    }
+}

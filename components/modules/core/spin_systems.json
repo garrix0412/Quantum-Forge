@@ -1,0 +1,46 @@
+[
+  {
+    "name": "Hamiltonian.TFIM",
+    "kind": "hamiltonian",
+    "tags": ["tfim", "ising", "spin", "transverse_field"],
+    "needs": [],
+    "provides": ["hamiltonian"],
+    "params_schema": {
+      "n": {"type": "int", "description": "Number of qubits"},
+      "hx": {"type": "float", "description": "Transverse field strength"},
+      "j": {"type": "float", "description": "Coupling strength"},
+      "boundary": {"type": "str", "description": "Boundary condition", "enum": ["periodic", "open"]}
+    },
+    "yields": {
+      "H": "SparsePauliOp hamiltonian"
+    },
+    "helper_function": "build_tfim_h",
+    "invoke_template": "{var} = build_tfim_h(n, hx, j, boundary)",
+    "codegen_hint": {
+      "helper": "build_tfim_h",
+      "import": "from qiskit.quantum_info import SparsePauliOp",
+      "function_call": "build_tfim_h"
+    }
+  },
+  {
+    "name": "Circuit.TFIM_HEA",
+    "kind": "ansatz", 
+    "tags": ["tfim", "hea", "hardware_efficient", "ansatz"],
+    "needs": [],
+    "provides": ["ansatz"],
+    "params_schema": {
+      "n": {"type": "int", "description": "Number of qubits"},
+      "reps": {"type": "int", "description": "Circuit depth (number of layers)"}
+    },
+    "yields": {
+      "ansatz": "QuantumCircuit ansatz"
+    },
+    "helper_function": "tfim_hea",
+    "invoke_template": "{var} = tfim_hea(n, reps)",
+    "codegen_hint": {
+      "helper": "tfim_hea",
+      "import": "from qiskit import QuantumCircuit; from qiskit.circuit import ParameterVector",
+      "function_call": "tfim_hea"
+    }
+  }
+]

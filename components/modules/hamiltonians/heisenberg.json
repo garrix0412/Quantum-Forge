@@ -1,0 +1,56 @@
+{
+    "name": "Hamiltonian.Heisenberg",
+    "kind": "hamiltonian",
+    "description": "海森堡自旋链哈密顿量",
+    "tags": ["heisenberg", "spin_chain", "quantum_magnetism", "isotropic"],
+    "needs": [],
+    "provides": ["hamiltonian"],
+    "yields": {
+        "hamiltonian": "SparsePauliOp Hamiltonian"
+    },
+    "params_schema": {
+        "n": {
+            "type": "int",
+            "description": "自旋链长度（量子比特数）",
+            "default": 4,
+            "range": [2, 20]
+        },
+        "Jx": {
+            "type": "float", 
+            "description": "X方向相互作用强度",
+            "default": 1.0,
+            "range": [-5.0, 5.0]
+        },
+        "Jy": {
+            "type": "float",
+            "description": "Y方向相互作用强度", 
+            "default": 1.0,
+            "range": [-5.0, 5.0]
+        },
+        "Jz": {
+            "type": "float",
+            "description": "Z方向相互作用强度",
+            "default": 1.0, 
+            "range": [-5.0, 5.0]
+        },
+        "hz": {
+            "type": "float",
+            "description": "Z方向外磁场强度",
+            "default": 0.0,
+            "range": [-5.0, 5.0]
+        },
+        "boundary": {
+            "type": "str",
+            "description": "边界条件",
+            "default": "periodic",
+            "options": ["periodic", "open"]
+        }
+    },
+    "helper_function": "build_heisenberg_h",
+    "invoke_template": "{var} = build_heisenberg_h(n, Jx, Jy, Jz, hz, boundary)",
+    "codegen_hint": {
+        "cell_name": "hamiltonian_heisenberg", 
+        "helper": "build_heisenberg_h",
+        "function_call": "build_heisenberg_h"
+    }
+}

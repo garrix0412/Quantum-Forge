@@ -1,0 +1,21 @@
+[
+  {
+    "name": "Algorithm.VQE",
+    "kind": "algorithm",
+    "tags": ["vqe", "variational", "ground_state"],
+    "needs": ["hamiltonian", "ansatz", "optimizer", "estimator"],
+    "provides": ["energy", "result"],
+    "params_schema": {
+      "optimizer": {"type": "str", "description": "Optimizer name"},
+      "maxiter": {"type": "int", "description": "Maximum iterations"}
+    },
+    "yields": {
+      "result": "VQE result object",
+      "energy": "float ground state energy"
+    },
+    "codegen_hint": {
+      "helper": "run_vqe",
+      "import": "from qiskit_algorithms import VQE"
+    }
+  }
+]

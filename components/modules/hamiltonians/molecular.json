@@ -1,0 +1,50 @@
+{
+    "name": "Hamiltonian.Molecular",
+    "kind": "hamiltonian",
+    "description": "Molecular electronic structure Hamiltonian",
+    "tags": ["molecular", "chemistry", "electronic_structure", "pyscf"],
+    "needs": [],
+    "provides": ["hamiltonian", "es_problem", "mapper"],
+    "yields": {
+        "hamiltonian": "SparsePauliOp Hamiltonian",
+        "es_problem": "Electronic structure problem",
+        "mapper": "Fermion-to-qubit mapper"
+    },
+    "params_schema": {
+        "molecule": {
+            "type": "str",
+            "description": "Molecule name (e.g. LiH, BeH2, H2O)",
+            "default": "LiH"
+        },
+        "basis_set": {
+            "type": "str", 
+            "description": "Basis set (e.g. sto3g, 6-31g, cc-pvdz)",
+            "default": "sto3g"
+        },
+        "atom_string": {
+            "type": "str",
+            "description": "Atomic coordinates string (e.g. 'Li 0 0 0; H 0 0 0.735')",
+            "default": "Li 0 0 0; H 0 0 0.735"
+        },
+        "charge": {
+            "type": "int",
+            "description": "Molecular charge",
+            "default": 0,
+            "range": [-3, 3]
+        },
+        "spin": {
+            "type": "int", 
+            "description": "Spin multiplicity",
+            "default": 0,
+            "range": [0, 4]
+        }
+    },
+    "helper_function": "build_molecular_hamiltonian",
+    "invoke_template": "{var}_hamiltonian, {var}_problem, {var}_mapper = build_molecular_hamiltonian(molecule, basis_set, atom_string, charge, spin)",
+    "codegen_hint": {
+        "cell_name": "hamiltonian_molecular",
+        "helper": "build_molecular_hamiltonian",
+        "import": "from qiskit_nature.second_q.drivers import PySCFDriver; from qiskit_nature.second_q.mappers import JordanWignerMapper; from qiskit_nature.units import DistanceUnit",
+        "function_call": "build_molecular_hamiltonian"
+    }
+}
